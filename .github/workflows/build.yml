@@ -28,14 +28,40 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: Pre-install Android NDK (with retry)
+        run: |
+          SDK_MANAGER="/usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager"
+          for i in 1 2 3; do
+            echo "NDK install attempt $i..."
+            yes | $SDK_MANAGER --install "ndk;28.2.13676358" && break
+            rm -rf "/usr/local/lib/android/sdk/ndk/28.2.13676358" || true
+            sleep 5
+          done
+
+      - name: Download Vazirmatn Font
+        run: |
+          mkdir -p assets/fonts
+          curl -fsSL "https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/fonts/ttf/Vazirmatn-Regular.ttf" -o assets/fonts/Vazirmatn-Regular.ttf || curl -fsSL "https://raw.githubusercontent.com/rastikerdar/vazirmatn/master/fonts/ttf/Vazirmatn-Regular.ttf" -o assets/fonts/Vazirmatn-Regular.ttf
+          curl -fsSL "https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/fonts/ttf/Vazirmatn-Bold.ttf" -o assets/fonts/Vazirmatn-Bold.ttf || curl -fsSL "https://raw.githubusercontent.com/rastikerdar/vazirmatn/master/fonts/ttf/Vazirmatn-Bold.ttf" -o assets/fonts/Vazirmatn-Bold.ttf
+
+      - name: Generate App Icon PNG from SVG
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y librsvg2-bin
+          mkdir -p assets/icon
+          rsvg-convert -w 1024 -h 1024 assets/icon/icon.svg -o assets/icon/icon.png
+
       - name: Install dependencies
         run: flutter pub get
+
+      - name: Generate Launcher Icons
+        run: dart run flutter_launcher_icons
 
       - name: Build Android APK
         run: flutter build apk --release
 
       - name: Build Web
-        run: flutter build web --release
+        run: flutter build web --release --base-href "/${{ github.event.repository.name }}/"
 
       - name: Upload Android APK
         uses: actions/upload-artifact@v4
