@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'l10n/app_strings.dart';
 import 'screens/baby_care_view.dart';
 import 'screens/checklist_view.dart';
+import 'screens/child_growth_view.dart';
 import 'screens/contraction_view.dart';
 import 'screens/feeding_view.dart';
 import 'screens/mom_care_view.dart';
@@ -25,7 +26,7 @@ class AymanApp extends StatefulWidget {
 
 class _AymanAppState extends State<AymanApp> {
   String _langCode = 'fa';
-  String _appMode = 'pregnancy'; // 'pregnancy' or 'baby'
+  String _appMode = 'pregnancy';
   DateTime? _lmpDate;
   DateTime? _babyBirthDate;
   String _babyName = '';
@@ -215,8 +216,8 @@ class _HomeShellState extends State<HomeShell> {
         kickSessions: widget.kickSessions,
         onSaveKickSession: widget.onKickSessionSaved,
       ),
-      ChecklistView(strings: s),
-      MomCareView(strings: s),
+      ChildGrowthView(strings: s),
+      MomAndChecklistTab(strings: s),
       SettingsTab(
         strings: s,
         hasLmpDate: widget.lmpDate != null,
@@ -261,14 +262,14 @@ class _HomeShellState extends State<HomeShell> {
             label: s.tabTrackers,
           ),
           NavigationDestination(
-            icon: const Icon(Icons.checklist_outlined),
-            selectedIcon: const Icon(Icons.checklist),
-            label: s.tabChecklist,
+            icon: const Icon(Icons.child_care_outlined),
+            selectedIcon: const Icon(Icons.child_care),
+            label: s.tabChild,
           ),
           NavigationDestination(
             icon: const Icon(Icons.spa_outlined),
             selectedIcon: const Icon(Icons.spa),
-            label: s.tabMomCare,
+            label: s.tabMomChecklist,
           ),
           NavigationDestination(
             icon: const Icon(Icons.settings_outlined),
@@ -277,6 +278,59 @@ class _HomeShellState extends State<HomeShell> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class MomAndChecklistTab extends StatefulWidget {
+  final AppStrings strings;
+
+  const MomAndChecklistTab({super.key, required this.strings});
+
+  @override
+  State<MomAndChecklistTab> createState() => _MomAndChecklistTabState();
+}
+
+class _MomAndChecklistTabState extends State<MomAndChecklistTab> {
+  int _subIndex = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = widget.strings;
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 6, 16, 4),
+          child: SizedBox(
+            width: double.infinity,
+            child: SegmentedButton<int>(
+              segments: [
+                ButtonSegment(
+                  value: 0,
+                  icon: const Icon(Icons.spa_outlined, size: 18),
+                  label: Text(s.subTabMomCare),
+                ),
+                ButtonSegment(
+                  value: 1,
+                  icon: const Icon(Icons.checklist, size: 18),
+                  label: Text(s.subTabChecklist),
+                ),
+              ],
+              selected: {_subIndex},
+              onSelectionChanged: (v) => setState(() => _subIndex = v.first),
+            ),
+          ),
+        ),
+        Expanded(
+          child: IndexedStack(
+            index: _subIndex,
+            children: [
+              MomCareView(strings: s),
+              ChecklistView(strings: s),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -638,9 +692,8 @@ class _HomeDashboardTabState extends State<HomeDashboardTab> {
             ? '$months months, ${totalDays % 30} days'
             : '$weeks weeks, $days days');
 
-    final headerName = widget.babyName.isNotEmpty
-        ? widget.babyName
-        : s.babyAgeTitle;
+    final headerName =
+        widget.babyName.isNotEmpty ? widget.babyName : s.babyAgeTitle;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
