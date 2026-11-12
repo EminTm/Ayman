@@ -5,6 +5,11 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 concurrency:
   group: build-${{ github.ref }}
   cancel-in-progress: true
@@ -69,8 +74,18 @@ jobs:
           name: ayman-android-apk
           path: build/app/outputs/flutter-apk/app-release.apk
 
-      - name: Upload Web Build
-        uses: actions/upload-artifact@v4
+      - name: Upload Web Pages Artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          name: ayman-web-build
           path: build/web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
