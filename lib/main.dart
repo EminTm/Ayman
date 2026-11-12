@@ -4,8 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'l10n/app_strings.dart';
+import 'screens/baby_care_view.dart';
 import 'screens/checklist_view.dart';
 import 'screens/contraction_view.dart';
+import 'screens/feeding_view.dart';
+import 'screens/mom_care_view.dart';
 import 'utils/pregnancy_data.dart';
 
 void main() {
@@ -22,7 +25,10 @@ class AymanApp extends StatefulWidget {
 
 class _AymanAppState extends State<AymanApp> {
   String _langCode = 'fa';
+  String _appMode = 'pregnancy'; // 'pregnancy' or 'baby'
   DateTime? _lmpDate;
+  DateTime? _babyBirthDate;
+  String _babyName = '';
   List<Map<String, dynamic>> _kickSessions = [];
   bool _loaded = false;
 
@@ -35,14 +41,18 @@ class _AymanAppState extends State<AymanApp> {
   Future<void> _loadPrefs() async {
     final prefs = await SharedPreferences.getInstance();
     final savedLang = prefs.getString('lang_code') ?? 'fa';
+    final savedMode = prefs.getString('app_mode') ?? 'pregnancy';
     final savedLmp = prefs.getString('lmp_date');
+    final savedBirth = prefs.getString('baby_birth_date');
+    final savedName = prefs.getString('baby_name') ?? '';
     final savedKicks = prefs.getString('kick_sessions');
 
     setState(() {
       _langCode = savedLang;
-      if (savedLmp != null) {
-        _lmpDate = DateTime.tryParse(savedLmp);
-      }
+      _appMode = savedMode;
+      if (savedLmp != null) _lmpDate = DateTime.tryParse(savedLmp);
+      if (savedBirth != null) _babyBirthDate = DateTime.tryParse(savedBirth);
+      _babyName = savedName;
       if (savedKicks != null) {
         final decoded = jsonDecode(savedKicks) as List<dynamic>;
         _kickSessions =
@@ -58,6 +68,12 @@ class _AymanAppState extends State<AymanApp> {
     setState(() => _langCode = code);
   }
 
+  Future<void> _setAppMode(String mode) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('app_mode', mode);
+    setState(() => _appMode = mode);
+  }
+
   Future<void> _setLmpDate(DateTime? date) async {
     final prefs = await SharedPreferences.getInstance();
     if (date == null) {
@@ -66,6 +82,20 @@ class _AymanAppState extends State<AymanApp> {
       await prefs.setString('lmp_date', date.toIso8601String());
     }
     setState(() => _lmpDate = date);
+  }
+
+  Future<void> _setBabyInfo(DateTime? birthDate, String name) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (birthDate == null) {
+      await prefs.remove('baby_birth_date');
+    } else {
+      await prefs.setString('baby_birth_date', birthDate.toIso8601String());
+    }
+    await prefs.setString('baby_name', name);
+    setState(() {
+      _babyBirthDate = birthDate;
+      _babyName = name;
+    });
   }
 
   Future<void> _addKickSession(int kicks, int seconds) async {
@@ -96,26 +126,31 @@ class _AymanAppState extends State<AymanApp> {
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFD86C88),
-          surface: const Color(0xFFFFF8F9),
+          seedColor: const Color(0xFF26847E),
+          surface: const Color(0xFFF8FBFA),
         ),
-        scaffoldBackgroundColor: const Color(0xFFFFF8F9),
+        scaffoldBackgroundColor: const Color(0xFFF8FBFA),
         cardTheme: CardThemeData(
           elevation: 0,
           color: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
-            side: BorderSide(color: Colors.pink.shade100.withValues(alpha: 0.6)),
+            side: BorderSide(color: Colors.teal.shade100.withValues(alpha: 0.6)),
           ),
         ),
       ),
       home: _loaded
           ? HomeShell(
               strings: strings,
+              appMode: _appMode,
               lmpDate: _lmpDate,
+              babyBirthDate: _babyBirthDate,
+              babyName: _babyName,
               kickSessions: _kickSessions,
               onLanguageChanged: _setLanguage,
+              onModeChanged: _setAppMode,
               onLmpChanged: _setLmpDate,
+              onBabyInfoChanged: _setBabyInfo,
               onKickSessionSaved: _addKickSession,
             )
           : const Scaffold(
@@ -127,19 +162,29 @@ class _AymanAppState extends State<AymanApp> {
 
 class HomeShell extends StatefulWidget {
   final AppStrings strings;
+  final String appMode;
   final DateTime? lmpDate;
+  final DateTime? babyBirthDate;
+  final String babyName;
   final List<Map<String, dynamic>> kickSessions;
   final ValueChanged<String> onLanguageChanged;
+  final ValueChanged<String> onModeChanged;
   final ValueChanged<DateTime?> onLmpChanged;
+  final Future<void> Function(DateTime?, String) onBabyInfoChanged;
   final Future<void> Function(int kicks, int seconds) onKickSessionSaved;
 
   const HomeShell({
     super.key,
     required this.strings,
+    required this.appMode,
     required this.lmpDate,
+    required this.babyBirthDate,
+    required this.babyName,
     required this.kickSessions,
     required this.onLanguageChanged,
+    required this.onModeChanged,
     required this.onLmpChanged,
+    required this.onBabyInfoChanged,
     required this.onKickSessionSaved,
   });
 
@@ -154,17 +199,24 @@ class _HomeShellState extends State<HomeShell> {
   Widget build(BuildContext context) {
     final s = widget.strings;
     final pages = [
-      PregnancyTab(
+      HomeDashboardTab(
         strings: s,
+        appMode: widget.appMode,
         lmpDate: widget.lmpDate,
+        babyBirthDate: widget.babyBirthDate,
+        babyName: widget.babyName,
+        onModeChanged: widget.onModeChanged,
         onLmpChanged: widget.onLmpChanged,
+        onBabyInfoChanged: widget.onBabyInfoChanged,
       ),
       TrackersTab(
         strings: s,
+        appMode: widget.appMode,
         kickSessions: widget.kickSessions,
         onSaveKickSession: widget.onKickSessionSaved,
       ),
       ChecklistView(strings: s),
+      MomCareView(strings: s),
       SettingsTab(
         strings: s,
         hasLmpDate: widget.lmpDate != null,
@@ -199,9 +251,9 @@ class _HomeShellState extends State<HomeShell> {
         onDestinationSelected: (i) => setState(() => _selectedIndex = i),
         destinations: [
           NavigationDestination(
-            icon: const Icon(Icons.pregnant_woman_outlined),
-            selectedIcon: const Icon(Icons.pregnant_woman),
-            label: s.tabPregnancy,
+            icon: const Icon(Icons.home_outlined),
+            selectedIcon: const Icon(Icons.home),
+            label: s.tabHome,
           ),
           NavigationDestination(
             icon: const Icon(Icons.favorite_border),
@@ -212,6 +264,11 @@ class _HomeShellState extends State<HomeShell> {
             icon: const Icon(Icons.checklist_outlined),
             selectedIcon: const Icon(Icons.checklist),
             label: s.tabChecklist,
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.spa_outlined),
+            selectedIcon: const Icon(Icons.spa),
+            label: s.tabMomCare,
           ),
           NavigationDestination(
             icon: const Icon(Icons.settings_outlined),
@@ -226,12 +283,14 @@ class _HomeShellState extends State<HomeShell> {
 
 class TrackersTab extends StatefulWidget {
   final AppStrings strings;
+  final String appMode;
   final List<Map<String, dynamic>> kickSessions;
   final Future<void> Function(int kicks, int seconds) onSaveKickSession;
 
   const TrackersTab({
     super.key,
     required this.strings,
+    required this.appMode,
     required this.kickSessions,
     required this.onSaveKickSession,
   });
@@ -241,33 +300,40 @@ class TrackersTab extends StatefulWidget {
 }
 
 class _TrackersTabState extends State<TrackersTab> {
-  int _subIndex = 0;
+  late int _subIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _subIndex = widget.appMode == 'baby' ? 2 : 0;
+  }
 
   @override
   Widget build(BuildContext context) {
     final s = widget.strings;
+    final tabs = [
+      (0, s.subTabKicks),
+      (1, s.subTabContractions),
+      (2, s.subTabFeeding),
+      (3, s.subTabBabyCare),
+    ];
+
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-          child: SizedBox(
-            width: double.infinity,
-            child: SegmentedButton<int>(
-              segments: [
-                ButtonSegment(
-                  value: 0,
-                  icon: const Icon(Icons.favorite_border, size: 18),
-                  label: Text(s.subTabKicks),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          child: Row(
+            children: tabs.map((t) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: ChoiceChip(
+                  label: Text(t.$2),
+                  selected: _subIndex == t.$1,
+                  onSelected: (_) => setState(() => _subIndex = t.$1),
                 ),
-                ButtonSegment(
-                  value: 1,
-                  icon: const Icon(Icons.timer_outlined, size: 18),
-                  label: Text(s.subTabContractions),
-                ),
-              ],
-              selected: {_subIndex},
-              onSelectionChanged: (val) => setState(() => _subIndex = val.first),
-            ),
+              );
+            }).toList(),
           ),
         ),
         Expanded(
@@ -280,6 +346,8 @@ class _TrackersTabState extends State<TrackersTab> {
                 onSaveSession: widget.onSaveKickSession,
               ),
               ContractionView(strings: s),
+              FeedingView(strings: s),
+              BabyCareView(strings: s),
             ],
           ),
         ),
@@ -288,44 +356,55 @@ class _TrackersTabState extends State<TrackersTab> {
   }
 }
 
-class PregnancyTab extends StatefulWidget {
+class HomeDashboardTab extends StatefulWidget {
   final AppStrings strings;
+  final String appMode;
   final DateTime? lmpDate;
+  final DateTime? babyBirthDate;
+  final String babyName;
+  final ValueChanged<String> onModeChanged;
   final ValueChanged<DateTime?> onLmpChanged;
+  final Future<void> Function(DateTime?, String) onBabyInfoChanged;
 
-  const PregnancyTab({
+  const HomeDashboardTab({
     super.key,
     required this.strings,
+    required this.appMode,
     required this.lmpDate,
+    required this.babyBirthDate,
+    required this.babyName,
+    required this.onModeChanged,
     required this.onLmpChanged,
+    required this.onBabyInfoChanged,
   });
 
   @override
-  State<PregnancyTab> createState() => _PregnancyTabState();
+  State<HomeDashboardTab> createState() => _HomeDashboardTabState();
 }
 
-class _PregnancyTabState extends State<PregnancyTab> {
+class _HomeDashboardTabState extends State<HomeDashboardTab> {
   bool _isEddMode = false;
 
   String _num(int value) =>
       widget.strings.isFa ? JalaliDate.toPersianDigits('$value') : '$value';
 
-  Future<void> _pickDate() async {
+  Future<DateTime?> _pickCalendarDate() async {
     final s = widget.strings;
-    DateTime? picked;
-
     if (s.isFa) {
-      picked = await _showJalaliPickerDialog();
+      return _showJalaliPickerDialog();
     } else {
       final now = DateTime.now();
-      picked = await showDatePicker(
+      return showDatePicker(
         context: context,
         initialDate: now,
-        firstDate: now.subtract(const Duration(days: 300)),
+        firstDate: now.subtract(const Duration(days: 1200)),
         lastDate: now.add(const Duration(days: 300)),
       );
     }
+  }
 
+  Future<void> _pickPregnancyDate() async {
+    final picked = await _pickCalendarDate();
     if (picked != null) {
       final normalized = DateTime(picked.year, picked.month, picked.day);
       final lmp = _isEddMode
@@ -333,6 +412,62 @@ class _PregnancyTabState extends State<PregnancyTab> {
           : normalized;
       widget.onLmpChanged(lmp);
     }
+  }
+
+  Future<void> _setupBabyDialog() async {
+    final s = widget.strings;
+    String nameInput = widget.babyName;
+    DateTime? selectedBirth = widget.babyBirthDate;
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          final birthLabel = selectedBirth == null
+              ? s.setBirthDateBtn
+              : (s.isFa
+                  ? JalaliDate.fromGregorian(selectedBirth!).formatFa()
+                  : '${selectedBirth!.year}-${selectedBirth!.month.toString().padLeft(2, '0')}-${selectedBirth!.day.toString().padLeft(2, '0')}');
+
+          return AlertDialog(
+            title: Text(s.editBabyInfoBtn),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  initialValue: nameInput,
+                  decoration: InputDecoration(labelText: s.babyNameLabel),
+                  onChanged: (v) => nameInput = v,
+                ),
+                const SizedBox(height: 14),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    final d = await _pickCalendarDate();
+                    if (d != null) setDialogState(() => selectedBirth = d);
+                  },
+                  icon: const Icon(Icons.cake_outlined),
+                  label: Text(birthLabel),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(s.cancelBtn),
+              ),
+              FilledButton(
+                onPressed: () async {
+                  await widget.onBabyInfoChanged(
+                      selectedBirth, nameInput.trim());
+                  if (ctx.mounted) Navigator.pop(ctx);
+                },
+                child: Text(s.confirmBtn),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 
   Future<DateTime?> _showJalaliPickerDialog() async {
@@ -357,7 +492,7 @@ class _PregnancyTabState extends State<PregnancyTab> {
                 DropdownButtonFormField<int>(
                   initialValue: selectedYear,
                   decoration: InputDecoration(labelText: s.yearLabel),
-                  items: List.generate(4, (i) => todayJalali.year - 1 + i)
+                  items: List.generate(6, (i) => todayJalali.year - 3 + i)
                       .map((y) => DropdownMenuItem(
                             value: y,
                             child: Text(JalaliDate.toPersianDigits('$y')),
@@ -423,52 +558,203 @@ class _PregnancyTabState extends State<PregnancyTab> {
   @override
   Widget build(BuildContext context) {
     final s = widget.strings;
-    final lmp = widget.lmpDate;
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SegmentedButton<String>(
+            segments: [
+              ButtonSegment(
+                value: 'pregnancy',
+                icon: const Icon(Icons.pregnant_woman, size: 18),
+                label: Text(s.modePregnancy),
+              ),
+              ButtonSegment(
+                value: 'baby',
+                icon: const Icon(Icons.child_care, size: 18),
+                label: Text(s.modeBaby),
+              ),
+            ],
+            selected: {widget.appMode},
+            onSelectionChanged: (val) => widget.onModeChanged(val.first),
+          ),
+          const SizedBox(height: 16),
+          if (widget.appMode == 'baby')
+            _buildBabyDashboard(s)
+          else
+            _buildPregnancyDashboard(s),
+        ],
+      ),
+    );
+  }
 
-    if (lmp == null) {
-      return SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Card(
+  Widget _buildBabyDashboard(AppStrings s) {
+    final birth = widget.babyBirthDate;
+    if (birth == null) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                s.babyWelcomeTitle,
+                textAlign: TextAlign.center,
+                style:
+                    const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                s.babyWelcomeDesc,
+                textAlign: TextAlign.center,
+                style: const TextStyle(height: 1.6),
+              ),
+              const SizedBox(height: 20),
+              FilledButton.icon(
+                onPressed: _setupBabyDialog,
+                icon: const Icon(Icons.cake_outlined),
+                label: Text(s.setBirthDateBtn),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final bDay = DateTime(birth.year, birth.month, birth.day);
+    final totalDays = today.difference(bDay).inDays.clamp(0, 2000);
+    final months = totalDays ~/ 30;
+    final weeks = (totalDays % 30) ~/ 7;
+    final days = totalDays % 7;
+
+    final ageText = s.isFa
+        ? (months > 0
+            ? '${_num(months)} ماه و ${_num((totalDays % 30))} روز'
+            : '${_num(weeks)} هفته و ${_num(days)} روز')
+        : (months > 0
+            ? '$months months, ${totalDays % 30} days'
+            : '$weeks weeks, $days days');
+
+    final headerName = widget.babyName.isNotEmpty
+        ? widget.babyName
+        : s.babyAgeTitle;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            gradient: const LinearGradient(
+              colors: [Color(0xFF1E736D), Color(0xFF3BB2A4)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                headerName,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.9),
+                  fontSize: 15,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                ageText,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        Card(
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(18),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  s.welcomeTitle,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  s.welcomeDesc,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(height: 1.6),
-                ),
-                const SizedBox(height: 20),
-                SegmentedButton<bool>(
-                  segments: [
-                    ButtonSegment(value: false, label: Text(s.dateTypeLmp)),
-                    ButtonSegment(value: true, label: Text(s.dateTypeEdd)),
+                Row(
+                  children: [
+                    Icon(Icons.spa_outlined,
+                        color: Theme.of(context).colorScheme.primary),
+                    const SizedBox(width: 8),
+                    Text(
+                      s.postpartumTipTitle,
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
                   ],
-                  selected: {_isEddMode},
-                  onSelectionChanged: (val) =>
-                      setState(() => _isEddMode = val.first),
                 ),
-                const SizedBox(height: 20),
-                FilledButton.icon(
-                  onPressed: _pickDate,
-                  icon: const Icon(Icons.calendar_month),
-                  label: Text(s.selectDateBtn),
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                ),
+                const SizedBox(height: 8),
+                Text(s.postpartumTipDesc, style: const TextStyle(height: 1.6)),
               ],
             ),
+          ),
+        ),
+        const SizedBox(height: 14),
+        OutlinedButton.icon(
+          onPressed: _setupBabyDialog,
+          icon: const Icon(Icons.edit),
+          label: Text(s.editBabyInfoBtn),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPregnancyDashboard(AppStrings s) {
+    final lmp = widget.lmpDate;
+    if (lmp == null) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                s.welcomeTitle,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                s.welcomeDesc,
+                textAlign: TextAlign.center,
+                style: const TextStyle(height: 1.6),
+              ),
+              const SizedBox(height: 20),
+              SegmentedButton<bool>(
+                segments: [
+                  ButtonSegment(value: false, label: Text(s.dateTypeLmp)),
+                  ButtonSegment(value: true, label: Text(s.dateTypeEdd)),
+                ],
+                selected: {_isEddMode},
+                onSelectionChanged: (val) =>
+                    setState(() => _isEddMode = val.first),
+              ),
+              const SizedBox(height: 20),
+              FilledButton.icon(
+                onPressed: _pickPregnancyDate,
+                icon: const Icon(Icons.calendar_month),
+                label: Text(s.selectDateBtn),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+              ),
+            ],
           ),
         ),
       );
@@ -502,153 +788,150 @@ class _PregnancyTabState extends State<PregnancyTab> {
             : s.daysLeftLabel(daysLeft))
         : s.daysLeftLabel(daysLeft);
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(22),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
-              gradient: const LinearGradient(
-                colors: [Color(0xFFD86C88), Color(0xFFE996AC)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            gradient: const LinearGradient(
+              colors: [Color(0xFF1E736D), Color(0xFF3BB2A4)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.25),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    trimester,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.25),
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  weekText,
+                child: Text(
+                  trimester,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  daysLeftText,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.92),
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: LinearProgressIndicator(
-                    value: progress,
-                    minHeight: 10,
-                    backgroundColor: Colors.white.withValues(alpha: 0.3),
-                    valueColor: const AlwaysStoppedAnimation(Colors.white),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  '${s.dueDateLabel} $formattedEdd',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.95),
-                    fontSize: 13,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(18),
-              child: Row(
-                children: [
-                  Text(milestone.emoji, style: const TextStyle(fontSize: 44)),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          s.babySizeTitle,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurfaceVariant,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          s.isFa ? milestone.sizeFa : milestone.sizeEn,
-                          style: const TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
               ),
-            ),
+              const SizedBox(height: 12),
+              Text(
+                weekText,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                daysLeftText,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.92),
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 10,
+                  backgroundColor: Colors.white.withValues(alpha: 0.3),
+                  valueColor: const AlwaysStoppedAnimation(Colors.white),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                '${s.dueDateLabel} $formattedEdd',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.95),
+                  fontSize: 13,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+        ),
+        const SizedBox(height: 16),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Row(
+              children: [
+                Text(milestone.emoji, style: const TextStyle(fontSize: 44)),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Icons.lightbulb_outline,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      const SizedBox(width: 8),
                       Text(
-                        s.weeklyTipTitle,
+                        s.babySizeTitle,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        s.isFa ? milestone.sizeFa : milestone.sizeEn,
                         style: const TextStyle(
-                          fontSize: 16,
+                          fontSize: 17,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
-                  Text(
-                    s.isFa ? milestone.tipFa : milestone.tipEn,
-                    style: const TextStyle(height: 1.65, fontSize: 14),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 16),
-          OutlinedButton.icon(
-            onPressed: _pickDate,
-            icon: const Icon(Icons.edit_calendar),
-            label: Text(s.changeDateBtn),
+        ),
+        const SizedBox(height: 12),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.lightbulb_outline,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      s.weeklyTipTitle,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  s.isFa ? milestone.tipFa : milestone.tipEn,
+                  style: const TextStyle(height: 1.65, fontSize: 14),
+                ),
+              ],
+            ),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 16),
+        OutlinedButton.icon(
+          onPressed: _pickPregnancyDate,
+          icon: const Icon(Icons.edit_calendar),
+          label: Text(s.changeDateBtn),
+        ),
+      ],
     );
   }
 }
@@ -842,7 +1125,8 @@ class _KickCounterTabState extends State<KickCounterTab> {
               return Card(
                 margin: const EdgeInsets.only(bottom: 8),
                 child: ListTile(
-                  leading: const Icon(Icons.favorite, color: Color(0xFFD86C88)),
+                  leading: Icon(Icons.favorite,
+                      color: Theme.of(context).colorScheme.primary),
                   title: Text('$kText ${s.kicksCounted}'),
                   subtitle: Text(dateStr),
                   trailing: Text(_formatDuration(secs, s.isFa)),
