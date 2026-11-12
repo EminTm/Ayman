@@ -22,8 +22,9 @@ class AppStrings {
   String get subTabContractions => isFa ? 'انقباضات' : 'Contractions';
   String get subTabFeeding => isFa ? 'شیردهی' : 'Feeding';
   String get subTabBabyCare => isFa ? 'خواب و پوشک' : 'Sleep & Diaper';
-  String get subTabMomCare => isFa ? 'سلامت مادر' : 'Mom Care';
-  String get subTabChecklist => isFa ? 'چک‌لیست بارداری' : 'Checklist';
+  String get subTabMomCare => isFa ? 'سلامت مادر' : 'Mom';
+  String get subTabPartner => isFa ? 'همراه' : 'Partner';
+  String get subTabChecklist => isFa ? 'چک‌لیست' : 'Checklist';
 
   // Child Growth Sub-tabs
   String get subGrowth => isFa ? 'نمودار رشد' : 'Growth';
@@ -143,6 +144,16 @@ class AppStrings {
       ? 'تو تنها نیستی و این احساس گناه تو نیست. با همسرت یا یک فرد نزدیک صحبت کن. اگر این حس بیش از ۲ هفته ادامه داشت، حتماً با پزشک یا مشاور صحبت کن.'
       : 'You are not alone and this is not your fault. Talk to your partner or a loved one. If sadness lasts over 2 weeks, please reach out to a doctor.';
 
+  // Partner Mode
+  String get partnerHeroTitle => isFa ? 'حالت همراه (ویژه پدر و خانواده) 🤝' : 'Partner Mode 🤝';
+  String get partnerHeroDesc => isFa
+      ? 'حمایت عاطفی و عملی همسر، بزرگ‌ترین هدیه به سلامت مادر و نوزاد است.'
+      : 'Emotional and practical partner support is the best gift for mom and baby.';
+  String get partnerTipsPregnancyTitle => isFa ? 'چطور در بارداری کمک کنیم؟' : 'How to help during pregnancy';
+  String get partnerTipsBabyTitle => isFa ? 'چطور پس از زایمان کمک کنیم؟' : 'How to help after birth';
+  String get shareSummaryBtn => isFa ? 'کپی خلاصه امروز برای همسر' : 'Copy Today\'s Summary for Partner';
+  String get summaryCopiedMsg => isFa ? 'خلاصه وضعیت امروز کپی شد! می‌توانید برای همسرتان بفرستید.' : 'Summary copied! Ready to send to your partner.';
+
   // Child Growth, Vaccines, Food, Milestones
   String get genderBoy => isFa ? 'پسر' : 'Boy';
   String get genderGirl => isFa ? 'دختر' : 'Girl';
@@ -176,7 +187,18 @@ class AppStrings {
       ? '$done از $total مورد آماده شده'
       : '$done of $total completed';
 
-  // Settings & Privacy
+  // Backup & Settings
+  String get backupTitle => isFa ? 'پشتیبان‌گیری و انتقال داده‌ها' : 'Backup & Restore';
+  String get backupDesc => isFa
+      ? 'برای حفظ اطلاعات هنگام تعویض گوشی، نسخه پشتیبان را کپی و در یادداشت‌های خود ذخیره کنید.'
+      : 'Copy your data backup to keep it safe or transfer to another device.';
+  String get exportBackupBtn => isFa ? 'کپی پشتیبان (Export)' : 'Copy Backup';
+  String get importBackupBtn => isFa ? 'بازیابی پشتیبان (Import)' : 'Restore Backup';
+  String get backupCopiedMsg => isFa ? 'متن پشتیبان در حافظه کپی شد!' : 'Backup JSON copied to clipboard!';
+  String get pasteBackupHint => isFa ? 'متن پشتیبان را اینجا جایگذاری کنید...' : 'Paste your backup JSON here...';
+  String get backupRestoredMsg => isFa ? 'اطلاعات با موفقیت بازیابی شد! ✅' : 'Backup restored successfully! ✅';
+  String get backupInvalidMsg => isFa ? 'متن پشتیبان معتبر نیست.' : 'Invalid backup format.';
+
   String get languageTitle => isFa ? 'زبان برنامه' : 'App Language';
   String get persianName => 'فارسی';
   String get englishName => 'English';
@@ -189,7 +211,7 @@ class AppStrings {
       ? 'این برنامه صرفاً یک ابزار کمکی و آموزشی است و جایگزین تشخیص یا ویزیت پزشک و ماما نیست. در صورت مشاهده علائم غیرعادی، فوراً با پزشک خود تماس بگیرید.'
       : 'This app is strictly an educational and tracking tool and does not replace professional medical advice. Contact your doctor or midwife immediately if you have any concerns.';
   String get clearDataBtn => isFa ? 'پاک کردن تاریخ بارداری' : 'Clear Pregnancy Date';
-  String get versionLabel => isFa ? 'نسخه 0.4.0 (رشد و سلامت کودک)' : 'Version 0.4.0';
+  String get versionLabel => isFa ? 'آیمان • نسخه 1.0.0' : 'Ayman • Version 1.0.0';
 
   // Jalali Date Picker & Dialogs
   String get pickJalaliTitle => isFa ? 'انتخاب تاریخ شمسی' : 'Select Jalali Date';
