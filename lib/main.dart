@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'l10n/app_strings.dart';
+import 'screens/checklist_view.dart';
+import 'screens/contraction_view.dart';
 import 'utils/pregnancy_data.dart';
 
 void main() {
@@ -157,11 +159,12 @@ class _HomeShellState extends State<HomeShell> {
         lmpDate: widget.lmpDate,
         onLmpChanged: widget.onLmpChanged,
       ),
-      KickCounterTab(
+      TrackersTab(
         strings: s,
-        sessions: widget.kickSessions,
-        onSaveSession: widget.onKickSessionSaved,
+        kickSessions: widget.kickSessions,
+        onSaveKickSession: widget.onKickSessionSaved,
       ),
+      ChecklistView(strings: s),
       SettingsTab(
         strings: s,
         hasLmpDate: widget.lmpDate != null,
@@ -203,7 +206,12 @@ class _HomeShellState extends State<HomeShell> {
           NavigationDestination(
             icon: const Icon(Icons.favorite_border),
             selectedIcon: const Icon(Icons.favorite),
-            label: s.tabKicks,
+            label: s.tabTrackers,
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.checklist_outlined),
+            selectedIcon: const Icon(Icons.checklist),
+            label: s.tabChecklist,
           ),
           NavigationDestination(
             icon: const Icon(Icons.settings_outlined),
@@ -212,6 +220,70 @@ class _HomeShellState extends State<HomeShell> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class TrackersTab extends StatefulWidget {
+  final AppStrings strings;
+  final List<Map<String, dynamic>> kickSessions;
+  final Future<void> Function(int kicks, int seconds) onSaveKickSession;
+
+  const TrackersTab({
+    super.key,
+    required this.strings,
+    required this.kickSessions,
+    required this.onSaveKickSession,
+  });
+
+  @override
+  State<TrackersTab> createState() => _TrackersTabState();
+}
+
+class _TrackersTabState extends State<TrackersTab> {
+  int _subIndex = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = widget.strings;
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+          child: SizedBox(
+            width: double.infinity,
+            child: SegmentedButton<int>(
+              segments: [
+                ButtonSegment(
+                  value: 0,
+                  icon: const Icon(Icons.favorite_border, size: 18),
+                  label: Text(s.subTabKicks),
+                ),
+                ButtonSegment(
+                  value: 1,
+                  icon: const Icon(Icons.timer_outlined, size: 18),
+                  label: Text(s.subTabContractions),
+                ),
+              ],
+              selected: {_subIndex},
+              onSelectionChanged: (val) => setState(() => _subIndex = val.first),
+            ),
+          ),
+        ),
+        Expanded(
+          child: IndexedStack(
+            index: _subIndex,
+            children: [
+              KickCounterTab(
+                strings: s,
+                sessions: widget.kickSessions,
+                onSaveSession: widget.onSaveKickSession,
+              ),
+              ContractionView(strings: s),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
