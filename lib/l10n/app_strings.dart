@@ -13,19 +13,27 @@ class AppStrings {
   // Navigation Tabs
   String get tabHome => isFa ? 'خانه' : 'Home';
   String get tabTrackers => isFa ? 'پیگیری' : 'Trackers';
-  String get tabChecklist => isFa ? 'چک‌لیست' : 'Checklist';
-  String get tabMomCare => isFa ? 'سلامت مادر' : 'Mom Care';
+  String get tabChild => isFa ? 'کودک' : 'Child';
+  String get tabMomChecklist => isFa ? 'مادر' : 'Mom';
   String get tabSettings => isFa ? 'تنظیمات' : 'Settings';
 
-  // Mode Switcher
-  String get modePregnancy => isFa ? 'دوران بارداری' : 'Pregnancy';
-  String get modeBaby => isFa ? 'مادر و نوزاد' : 'Postpartum & Baby';
-
-  // Trackers Sub-tabs
+  // Sub-tabs
   String get subTabKicks => isFa ? 'لگدشمار' : 'Kicks';
   String get subTabContractions => isFa ? 'انقباضات' : 'Contractions';
   String get subTabFeeding => isFa ? 'شیردهی' : 'Feeding';
   String get subTabBabyCare => isFa ? 'خواب و پوشک' : 'Sleep & Diaper';
+  String get subTabMomCare => isFa ? 'سلامت مادر' : 'Mom Care';
+  String get subTabChecklist => isFa ? 'چک‌لیست بارداری' : 'Checklist';
+
+  // Child Growth Sub-tabs
+  String get subGrowth => isFa ? 'نمودار رشد' : 'Growth';
+  String get subVaccines => isFa ? 'واکسن‌ها' : 'Vaccines';
+  String get subSolidFood => isFa ? 'غذای کمکی' : 'Solid Food';
+  String get subMilestones => isFa ? 'نقاط عطف' : 'Milestones';
+
+  // Mode Switcher
+  String get modePregnancy => isFa ? 'دوران بارداری' : 'Pregnancy';
+  String get modeBaby => isFa ? 'مادر و نوزاد' : 'Postpartum & Baby';
 
   // Pregnancy Setup & Dashboard
   String get welcomeTitle => isFa ? 'به آیمان خوش آمدید 🌸' : 'Welcome to Ayman 🌸';
@@ -135,6 +143,28 @@ class AppStrings {
       ? 'تو تنها نیستی و این احساس گناه تو نیست. با همسرت یا یک فرد نزدیک صحبت کن. اگر این حس بیش از ۲ هفته ادامه داشت، حتماً با پزشک یا مشاور صحبت کن.'
       : 'You are not alone and this is not your fault. Talk to your partner or a loved one. If sadness lasts over 2 weeks, please reach out to a doctor.';
 
+  // Child Growth, Vaccines, Food, Milestones
+  String get genderBoy => isFa ? 'پسر' : 'Boy';
+  String get genderGirl => isFa ? 'دختر' : 'Girl';
+  String get addMeasurementBtn => isFa ? 'ثبت قد و وزن جدید' : 'Add Measurement';
+  String get ageMonthsLabel => isFa ? 'سن (ماه)' : 'Age (Months)';
+  String get weightKgLabel => isFa ? 'وزن (کیلوگرم)' : 'Weight (kg)';
+  String get heightCmLabel => isFa ? 'قد (سانتی‌متر)' : 'Height (cm)';
+  String get headCmLabel => isFa ? 'دور سر (سانتی‌متر)' : 'Head (cm)';
+  String get growthChartTitle => isFa ? 'روند وزن‌گیری کودک' : 'Weight Growth Trend';
+  String get needTwoPointsMsg => isFa
+      ? 'برای رسم خط نمودار حداقل ۲ نوبت قد و وزن ثبت کنید.'
+      : 'Log at least 2 measurements to draw the growth curve.';
+  String get whoNormalRange => isFa ? 'محدوده نرمال WHO:' : 'WHO normal range:';
+  String get whoStatusNormal => isFa ? 'در محدوده نرمال سازمان بهداشت جهانی ✅' : 'Within WHO healthy range ✅';
+  String get whoStatusCheck => isFa ? 'خارج از محدوده میانی؛ با پزشک کودک مشورت کنید' : 'Outside median range; consult your pediatrician';
+  String get vaccineDisclaimer => isFa
+      ? 'برنامه واکسیناسیون زیر بر اساس جدول استاندارد کشوری تنظیم شده است. تاریخ دقیق تزریق را با مرکز بهداشت یا پزشک هماهنگ کنید.'
+      : 'Schedule below follows standard immunization guidelines. Confirm exact dates with your pediatrician.';
+  String get foodSafetyAlert => isFa
+      ? 'هشدار مهم: زیر ۱ سال از دادن عسل، نمک، شکر و شیر گاو خودداری کنید. هر غذای جدید را با فاصله ۳ روز امتحان کنید تا حساسیت مشخص شود.'
+      : 'Important: Avoid honey, salt, sugar, and cow’s milk under 1 year. Introduce one new food every 3 days to watch for allergies.';
+
   // Checklist
   String get catAll => isFa ? 'همه' : 'All';
   String get catMedical => isFa ? 'آزمایش و ویزیت' : 'Medical';
@@ -159,7 +189,7 @@ class AppStrings {
       ? 'این برنامه صرفاً یک ابزار کمکی و آموزشی است و جایگزین تشخیص یا ویزیت پزشک و ماما نیست. در صورت مشاهده علائم غیرعادی، فوراً با پزشک خود تماس بگیرید.'
       : 'This app is strictly an educational and tracking tool and does not replace professional medical advice. Contact your doctor or midwife immediately if you have any concerns.';
   String get clearDataBtn => isFa ? 'پاک کردن تاریخ بارداری' : 'Clear Pregnancy Date';
-  String get versionLabel => isFa ? 'نسخه 0.3.0 (مادر و نوزاد)' : 'Version 0.3.0';
+  String get versionLabel => isFa ? 'نسخه 0.4.0 (رشد و سلامت کودک)' : 'Version 0.4.0';
 
   // Jalali Date Picker & Dialogs
   String get pickJalaliTitle => isFa ? 'انتخاب تاریخ شمسی' : 'Select Jalali Date';
