@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'l10n/app_strings.dart';
@@ -10,6 +11,7 @@ import 'screens/child_growth_view.dart';
 import 'screens/contraction_view.dart';
 import 'screens/feeding_view.dart';
 import 'screens/mom_care_view.dart';
+import 'screens/partner_mode_view.dart';
 import 'utils/pregnancy_data.dart';
 
 void main() {
@@ -48,19 +50,25 @@ class _AymanAppState extends State<AymanApp> {
     final savedName = prefs.getString('baby_name') ?? '';
     final savedKicks = prefs.getString('kick_sessions');
 
-    setState(() {
-      _langCode = savedLang;
-      _appMode = savedMode;
-      if (savedLmp != null) _lmpDate = DateTime.tryParse(savedLmp);
-      if (savedBirth != null) _babyBirthDate = DateTime.tryParse(savedBirth);
-      _babyName = savedName;
-      if (savedKicks != null) {
-        final decoded = jsonDecode(savedKicks) as List<dynamic>;
-        _kickSessions =
-            decoded.map((e) => Map<String, dynamic>.from(e as Map)).toList();
-      }
-      _loaded = true;
-    });
+    List<Map<String, dynamic>> parsedKicks = [];
+    if (savedKicks != null) {
+      final decoded = jsonDecode(savedKicks) as List<dynamic>;
+      parsedKicks =
+          decoded.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    }
+
+    if (mounted) {
+      setState(() {
+        _langCode = savedLang;
+        _appMode = savedMode;
+        _lmpDate = savedLmp != null ? DateTime.tryParse(savedLmp) : null;
+        _babyBirthDate =
+            savedBirth != null ? DateTime.tryParse(savedBirth) : null;
+        _babyName = savedName;
+        _kickSessions = parsedKicks;
+        _loaded = true;
+      });
+    }
   }
 
   Future<void> _setLanguage(String code) async {
@@ -111,6 +119,42 @@ class _AymanAppState extends State<AymanApp> {
     setState(() => _kickSessions = updated);
   }
 
+  Future<String> _exportBackup() async {
+    final prefs = await SharedPreferences.getInstance();
+    final data = <String, dynamic>{};
+    for (final key in prefs.getKeys()) {
+      data[key] = prefs.get(key);
+    }
+    return jsonEncode({'app': 'Ayman', 'version': 1, 'data': data});
+  }
+
+  Future<bool> _importBackup(String raw) async {
+    try {
+      final decoded = jsonDecode(raw) as Map<String, dynamic>;
+      final data = Map<String, dynamic>.from(decoded['data'] as Map);
+      final prefs = await SharedPreferences.getInstance();
+      for (final entry in data.entries) {
+        final k = entry.key;
+        final v = entry.value;
+        if (v is String) {
+          await prefs.setString(k, v);
+        } else if (v is int) {
+          await prefs.setInt(k, v);
+        } else if (v is bool) {
+          await prefs.setBool(k, v);
+        } else if (v is double) {
+          await prefs.setDouble(k, v);
+        } else if (v is List) {
+          await prefs.setStringList(k, v.map((e) => e.toString()).toList());
+        }
+      }
+      await _loadPrefs();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final strings = AppStrings(_langCode);
@@ -126,17 +170,18 @@ class _AymanAppState extends State<AymanApp> {
       ],
       theme: ThemeData(
         useMaterial3: true,
+        fontFamily: 'Vazirmatn',
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF26847E),
-          surface: const Color(0xFFF8FBFA),
+          surface: const Color(0xFFF6FAF9),
         ),
-        scaffoldBackgroundColor: const Color(0xFFF8FBFA),
+        scaffoldBackgroundColor: const Color(0xFFF6FAF9),
         cardTheme: CardThemeData(
           elevation: 0,
           color: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
-            side: BorderSide(color: Colors.teal.shade100.withValues(alpha: 0.6)),
+            side: BorderSide(color: Colors.teal.shade100.withValues(alpha: 0.55)),
           ),
         ),
       ),
@@ -153,6 +198,8 @@ class _AymanAppState extends State<AymanApp> {
               onLmpChanged: _setLmpDate,
               onBabyInfoChanged: _setBabyInfo,
               onKickSessionSaved: _addKickSession,
+              onExportBackup: _exportBackup,
+              onImportBackup: _importBackup,
             )
           : const Scaffold(
               body: Center(child: CircularProgressIndicator()),
@@ -173,6 +220,8 @@ class HomeShell extends StatefulWidget {
   final ValueChanged<DateTime?> onLmpChanged;
   final Future<void> Function(DateTime?, String) onBabyInfoChanged;
   final Future<void> Function(int kicks, int seconds) onKickSessionSaved;
+  final Future<String> Function() onExportBackup;
+  final Future<bool> Function(String) onImportBackup;
 
   const HomeShell({
     super.key,
@@ -187,6 +236,8 @@ class HomeShell extends StatefulWidget {
     required this.onLmpChanged,
     required this.onBabyInfoChanged,
     required this.onKickSessionSaved,
+    required this.onExportBackup,
+    required this.onImportBackup,
   });
 
   @override
@@ -217,12 +268,20 @@ class _HomeShellState extends State<HomeShell> {
         onSaveKickSession: widget.onKickSessionSaved,
       ),
       ChildGrowthView(strings: s),
-      MomAndChecklistTab(strings: s),
+      MomAndChecklistTab(
+        strings: s,
+        appMode: widget.appMode,
+        lmpDate: widget.lmpDate,
+        babyBirthDate: widget.babyBirthDate,
+        babyName: widget.babyName,
+      ),
       SettingsTab(
         strings: s,
         hasLmpDate: widget.lmpDate != null,
         onLanguageChanged: widget.onLanguageChanged,
         onClearDate: () => widget.onLmpChanged(null),
+        onExportBackup: widget.onExportBackup,
+        onImportBackup: widget.onImportBackup,
       ),
     ];
 
@@ -284,8 +343,19 @@ class _HomeShellState extends State<HomeShell> {
 
 class MomAndChecklistTab extends StatefulWidget {
   final AppStrings strings;
+  final String appMode;
+  final DateTime? lmpDate;
+  final DateTime? babyBirthDate;
+  final String babyName;
 
-  const MomAndChecklistTab({super.key, required this.strings});
+  const MomAndChecklistTab({
+    super.key,
+    required this.strings,
+    required this.appMode,
+    required this.lmpDate,
+    required this.babyBirthDate,
+    required this.babyName,
+  });
 
   @override
   State<MomAndChecklistTab> createState() => _MomAndChecklistTabState();
@@ -300,21 +370,14 @@ class _MomAndChecklistTabState extends State<MomAndChecklistTab> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 6, 16, 4),
+          padding: const EdgeInsets.fromLTRB(12, 6, 12, 4),
           child: SizedBox(
             width: double.infinity,
             child: SegmentedButton<int>(
               segments: [
-                ButtonSegment(
-                  value: 0,
-                  icon: const Icon(Icons.spa_outlined, size: 18),
-                  label: Text(s.subTabMomCare),
-                ),
-                ButtonSegment(
-                  value: 1,
-                  icon: const Icon(Icons.checklist, size: 18),
-                  label: Text(s.subTabChecklist),
-                ),
+                ButtonSegment(value: 0, label: Text(s.subTabMomCare)),
+                ButtonSegment(value: 1, label: Text(s.subTabPartner)),
+                ButtonSegment(value: 2, label: Text(s.subTabChecklist)),
               ],
               selected: {_subIndex},
               onSelectionChanged: (v) => setState(() => _subIndex = v.first),
@@ -326,6 +389,13 @@ class _MomAndChecklistTabState extends State<MomAndChecklistTab> {
             index: _subIndex,
             children: [
               MomCareView(strings: s),
+              PartnerModeView(
+                strings: s,
+                appMode: widget.appMode,
+                lmpDate: widget.lmpDate,
+                babyBirthDate: widget.babyBirthDate,
+                babyName: widget.babyName,
+              ),
               ChecklistView(strings: s),
             ],
           ),
@@ -1197,6 +1267,8 @@ class SettingsTab extends StatelessWidget {
   final bool hasLmpDate;
   final ValueChanged<String> onLanguageChanged;
   final VoidCallback onClearDate;
+  final Future<String> Function() onExportBackup;
+  final Future<bool> Function(String) onImportBackup;
 
   const SettingsTab({
     super.key,
@@ -1204,7 +1276,60 @@ class SettingsTab extends StatelessWidget {
     required this.hasLmpDate,
     required this.onLanguageChanged,
     required this.onClearDate,
+    required this.onExportBackup,
+    required this.onImportBackup,
   });
+
+  Future<void> _handleExport(BuildContext context) async {
+    final s = strings;
+    final jsonStr = await onExportBackup();
+    await Clipboard.setData(ClipboardData(text: jsonStr));
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(s.backupCopiedMsg)),
+      );
+    }
+  }
+
+  Future<void> _handleImport(BuildContext context) async {
+    final s = strings;
+    String input = '';
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(s.importBackupBtn),
+        content: TextField(
+          maxLines: 5,
+          decoration: InputDecoration(
+            hintText: s.pasteBackupHint,
+            border: const OutlineInputBorder(),
+          ),
+          onChanged: (v) => input = v,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(s.cancelBtn),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final ok = await onImportBackup(input.trim());
+              if (ctx.mounted) Navigator.pop(ctx);
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                        ok ? s.backupRestoredMsg : s.backupInvalidMsg),
+                  ),
+                );
+              }
+            },
+            child: Text(s.confirmBtn),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1233,6 +1358,44 @@ class SettingsTab extends StatelessWidget {
                     ],
                     selected: {s.langCode},
                     onSelectionChanged: (val) => onLanguageChanged(val.first),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    s.backupTitle,
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(s.backupDesc, style: const TextStyle(height: 1.5)),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton.tonalIcon(
+                          onPressed: () => _handleExport(context),
+                          icon: const Icon(Icons.upload_outlined, size: 18),
+                          label: Text(s.exportBackupBtn),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => _handleImport(context),
+                          icon: const Icon(Icons.download_outlined, size: 18),
+                          label: Text(s.importBackupBtn),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
