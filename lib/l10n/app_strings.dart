@@ -12,8 +12,13 @@ class AppStrings {
 
   // Navigation Tabs
   String get tabPregnancy => isFa ? 'بارداری' : 'Pregnancy';
-  String get tabKicks => isFa ? 'لگدشمار' : 'Kick Counter';
+  String get tabTrackers => isFa ? 'پیگیری' : 'Trackers';
+  String get tabChecklist => isFa ? 'چک‌لیست' : 'Checklist';
   String get tabSettings => isFa ? 'تنظیمات' : 'Settings';
+
+  // Trackers Sub-tabs
+  String get subTabKicks => isFa ? 'لگدشمار' : 'Kick Counter';
+  String get subTabContractions => isFa ? 'انقباضات' : 'Contractions';
 
   // Pregnancy Setup
   String get welcomeTitle => isFa ? 'به آیمان خوش آمدید 🌸' : 'Welcome to Ayman 🌸';
@@ -56,6 +61,30 @@ class AppStrings {
       ? 'جلسه با موفقیت ذخیره شد.'
       : 'Session saved successfully.';
 
+  // Contraction Timer
+  String get contractionGuide => isFa
+      ? 'قانون ۵-۱-۱: اگر انقباض‌ها منظم شدند و به مدت ۱ ساعت، هر ۵ دقیقه یک‌بار به طول ۱ دقیقه ادامه داشتند، با پزشک یا بیمارستان تماس بگیرید.'
+      : '5-1-1 Rule: If contractions come every 5 minutes, last 1 minute each, for at least 1 hour, contact your doctor or hospital.';
+  String get startContraction => isFa ? 'شروع انقباض' : 'Start Contraction';
+  String get stopContraction => isFa ? 'پایان انقباض' : 'Stop Contraction';
+  String get contractionHistory => isFa ? 'سابقه انقباضات' : 'Contraction Log';
+  String get noContractionsYet => isFa
+      ? 'هنوز انقباضی ثبت نشده است.'
+      : 'No contractions logged yet.';
+  String get intervalLabel => isFa ? 'فاصله تا قبلی:' : 'Interval:';
+  String get clearAllBtn => isFa ? 'پاک کردن همه' : 'Clear All';
+
+  // Checklist
+  String get catAll => isFa ? 'همه' : 'All';
+  String get catMedical => isFa ? 'آزمایش و ویزیت' : 'Medical';
+  String get catMomBag => isFa ? 'ساک مادر' : 'Mom\'s Bag';
+  String get catBabyBag => isFa ? 'ساک نوزاد' : 'Baby\'s Bag';
+  String get addItemBtn => isFa ? 'افزودن مورد جدید' : 'Add Item';
+  String get itemHint => isFa ? 'مثلاً: شارژر موبایل' : 'e.g., Phone charger';
+  String checklistProgress(int done, int total) => isFa
+      ? '$done از $total مورد آماده شده'
+      : '$done of $total completed';
+
   // Settings & Privacy
   String get languageTitle => isFa ? 'زبان برنامه' : 'App Language';
   String get persianName => 'فارسی';
@@ -69,13 +98,14 @@ class AppStrings {
       ? 'این برنامه صرفاً یک ابزار کمکی و آموزشی است و جایگزین تشخیص یا ویزیت پزشک و ماما نیست. در صورت مشاهده علائم غیرعادی یا کاهش حرکات جنین، فوراً با پزشک خود تماس بگیرید.'
       : 'This app is strictly an educational and tracking tool and does not replace professional medical advice. Contact your doctor or midwife immediately if you have any concerns.';
   String get clearDataBtn => isFa ? 'پاک کردن تاریخ بارداری' : 'Clear Pregnancy Date';
-  String get versionLabel => isFa ? 'نسخه 0.1.0 (آزمایشی)' : 'Version 0.1.0 (MVP)';
+  String get versionLabel => isFa ? 'نسخه 0.2.0 (تکمیل بارداری)' : 'Version 0.2.0';
 
-  // Jalali Date Picker
+  // Jalali Date Picker & Dialogs
   String get pickJalaliTitle => isFa ? 'انتخاب تاریخ شمسی' : 'Select Jalali Date';
   String get yearLabel => isFa ? 'سال' : 'Year';
   String get monthLabel => isFa ? 'ماه' : 'Month';
   String get dayLabel => isFa ? 'روز' : 'Day';
   String get confirmBtn => isFa ? 'تأیید' : 'Confirm';
   String get cancelBtn => isFa ? 'انصراف' : 'Cancel';
+  String get categoryLabel => isFa ? 'دسته‌بندی' : 'Category';
 }
